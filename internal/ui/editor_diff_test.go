@@ -215,6 +215,53 @@ func TestReadOnlyDiffSignsToggle(t *testing.T) {
 	}
 }
 
+// gutterCells reports, for each gutter row, the style of its number, its
+// background and the style of its sign.
+type gutterCells struct{ num, bg, sign term.Style }
+
+func readGutter(grid [][]term.Cell, y, width int) gutterCells {
+	var g gutterCells
+	for x := 0; x < width; x++ {
+		c := grid[y][x]
+		switch {
+		case c.Ch >= '0' && c.Ch <= '9' && g.num == 0:
+			g.num, g.bg = c.Style, c.BgStyle
+		case c.Ch == '+' || c.Ch == '−':
+			g.sign = c.Style
+		}
+	}
+	return g
+}
+
+func TestEditableAndReadOnlyDiffGuttersMatch(t *testing.T) {
+	oldLines := []string{"a", "b", "c"}
+	newLines := []string{"a", "B", "c"}
+	for _, style := range []string{"compact", "extended"} {
+		e := newRowsEditor(newLines, 30, 6)
+		e.LineNumbers = true
+		e.GutterStyle = style
+		e.Passive = true
+		e.SetDiffOverlay(fullLiveDiff(oldLines, newLines).liveUnified)
+		editable := makeGrid(30, 6)
+		e.Render(NewRenderSurface(editable, Rect{W: 30, H: 6}))
+
+		d := NewDiffEditorWidget("f.txt", diff.FileDiff{}, oldLines, newLines, true)
+		d.SetMode(DiffModeUnified)
+		d.setGutterStyle(style)
+		readOnly := makeGrid(30, 6)
+		d.SetRect(Rect{W: 30, H: 6})
+		d.Render(NewRenderSurface(readOnly, Rect{W: 30, H: 6}))
+
+		for row, kind := range []string{"context", "deleted", "added", "context"} {
+			got := readGutter(editable, row, e.GutterWidth())
+			want := readGutter(readOnly, row, d.unified.GutterWidth())
+			if got != want {
+				t.Errorf("%s gutter, %s row %d: editable %+v, read-only %+v", style, kind, row, got, want)
+			}
+		}
+	}
+}
+
 func TestDiffSignsColor(t *testing.T) {
 	signStyles := func(colored bool) (deleted, added term.Style) {
 		e := newRowsEditor([]string{"a", "B", "c"}, 30, 6)

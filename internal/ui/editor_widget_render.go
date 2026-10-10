@@ -122,7 +122,20 @@ func (e *EditorPaneWidget) Render(surface Surface) {
 			if lineIdx < totalLines && lineIdx == e.Cursor.Line && !e.Passive {
 				gutterStyle = term.StyleActiveLine
 			}
-			if !e.LineNumbers || (e.WordWrap && isWrapContinuation) {
+			bookmarkBg := gutterStyle
+			diffKind := diff.Context
+			if lineIdx < totalLines && !isWrapContinuation {
+				diffKind = e.DiffOverlay.kind(lineIdx)
+			}
+			if e.DiffOverlay != nil && (diffKind == diff.Added || diffKind == diff.Deleted) {
+				num := 0
+				if e.LineNumbers {
+					num = lineIdx + 1
+				}
+				if bg := e.renderEditorDiffGutter(surface, y, gutterW, num, diffKind, gutterStyle).bg; bg != 0 {
+					bookmarkBg = bg
+				}
+			} else if !e.LineNumbers || (e.WordWrap && isWrapContinuation) {
 				for i := 0; i < gutterW; i++ {
 					surface.SetCell(i, y, term.Cell{Ch: ' ', Style: gutterStyle})
 				}
@@ -172,12 +185,9 @@ func (e *EditorPaneWidget) Render(surface Surface) {
 					surface.SetCell(0, y, term.Cell{Ch: ch, Style: style})
 				}
 			}
-			if lineIdx < totalLines && !isWrapContinuation && e.DiffOverlay.kind(lineIdx) == diff.Added {
-				e.renderDiffSign(surface, y, gutterW, diff.Added, gutterStyle)
-			}
 			if len(e.Bookmarks) > 0 && lineIdx < totalLines && !isWrapContinuation {
 				if b, ok := e.Bookmarks[lineIdx]; ok {
-					surface.SetCell(e.bookmarkColumn(), y, term.Cell{Ch: b.Icon, Style: b.Style, BgStyle: gutterStyle})
+					surface.SetCell(e.bookmarkColumn(), y, term.Cell{Ch: b.Icon, Style: b.Style, BgStyle: bookmarkBg})
 				}
 			}
 		}

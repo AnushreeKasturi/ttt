@@ -79,7 +79,7 @@ func TestDiffGutterMatchesFormattedLayout(t *testing.T) {
 				for x := range grid[0] {
 					grid[0][x].Ch = '.'
 				}
-				renderDiffGutterWithSigns(NewRenderSurface(grid, Rect{W: 32, H: 1}), 0, 0, width, diff.SideLine{Num: num, Kind: kind}, term.StyleDefault, true, true)
+				renderDiffGutterWithSigns(NewRenderSurface(grid, Rect{W: 32, H: 1}), 0, 0, width, num, testGutterLook(kind), true)
 				if got := gridRow(grid, 0, len(want)); got != string(want) || grid[0][len(want)].Ch != '.' {
 					t.Fatalf("w=%d num=%d kind=%v: got %q want %q", width, num, kind, gridRow(grid, 0, len(want)+1), string(want))
 				}

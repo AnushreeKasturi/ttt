@@ -252,7 +252,40 @@ func (e *EditorPaneWidget) renderDiffGutterRow(surface Surface, y, gutterW, line
 	if !continuation && line < len(e.Buf.Lines) {
 		side = diff.SideLine{Num: o.num(line), Kind: o.kind(line)}
 	}
-	renderDiffGutterWithSigns(surface, 0, y, gutterW, side, collapsedDiffGutterStyle(side.Kind, o.EmphasizeGaps, o.gapHovered(line)), e.diffSignCol(gutterW) >= 0, o.SignsColor)
+	look := o.gutterLook(side.Kind, term.StyleLineNumber, collapsedDiffGutterStyle(side.Kind, o.EmphasizeGaps, o.gapHovered(line)))
+	renderDiffGutterWithSigns(surface, 0, y, gutterW, side.Num, look, e.diffSignCol(gutterW) >= 0)
+}
+
+// diffGutterLook is how a diff row's gutter is drawn. Every diff gutter, the
+// compact read-only layout and the editor layout of editable diffs alike, takes
+// it from gutterLook so the two cannot drift apart.
+type diffGutterLook struct {
+	num, bg, sign term.Style
+	mark          rune
+}
+
+// gutterLook styles a row of kind; base is the gutter's style for an
+// unchanged row and collapsed the gap row style, if any.
+func (o *DiffOverlay) gutterLook(kind diff.LineKind, base, collapsed term.Style) diffGutterLook {
+	look := diffGutterLook{num: base, sign: base}
+	switch kind {
+	case diff.Added:
+		look.mark, look.num, look.bg, look.sign = '+', term.StyleGutterAdded, term.StyleDiffAdded, term.StyleGutterAdded
+	case diff.Deleted:
+		look.mark, look.num, look.bg, look.sign = '−', term.StyleGutterDeleted, term.StyleDiffDeleted, term.StyleGutterDeleted
+	case diff.Collapsed:
+		look.mark = '▶'
+		if collapsed != term.StyleDefault {
+			look.num, look.sign = collapsed, collapsed
+		}
+		return look
+	default:
+		return look
+	}
+	if o != nil && !o.SignsColor {
+		look.sign = term.StyleLineNumber
+	}
+	return look
 }
 
 // diffSignCol is where an editor-layout gutter draws +, − and ▶, or -1 when
@@ -268,23 +301,15 @@ func (e *EditorPaneWidget) diffSignCol(gutterW int) int {
 	return gutterW - 1
 }
 
-func (e *EditorPaneWidget) renderDiffSign(surface Surface, y, gutterW int, kind diff.LineKind, bg term.Style) {
-	col := e.diffSignCol(gutterW)
-	if col < 0 {
-		return
+// renderEditorDiffGutter draws an editor-layout gutter row of kind: the
+// number, the gutter tint and the sign, all from gutterLook.
+func (e *EditorPaneWidget) renderEditorDiffGutter(surface Surface, y, gutterW, num int, kind diff.LineKind, base term.Style) diffGutterLook {
+	look := e.DiffOverlay.gutterLook(kind, base, term.StyleDefault)
+	e.drawGutterNumber(surface, y, gutterW, num, gutterW, term.Cell{Style: look.num, BgStyle: look.bg})
+	if col := e.diffSignCol(gutterW); col >= 0 && look.mark != 0 {
+		surface.SetCell(col, y, term.Cell{Ch: look.mark, Style: look.sign, BgStyle: look.bg})
 	}
-	added, deleted := term.StyleGutterAdded, term.StyleGutterDeleted
-	if !e.DiffOverlay.SignsColor {
-		added, deleted = term.StyleLineNumber, term.StyleLineNumber
-	}
-	switch kind {
-	case diff.Added:
-		surface.SetCell(col, y, term.Cell{Ch: '+', Style: added, BgStyle: bg})
-	case diff.Deleted:
-		surface.SetCell(col, y, term.Cell{Ch: '−', Style: deleted, BgStyle: bg})
-	case diff.Collapsed:
-		surface.SetCell(col, y, term.Cell{Ch: '▶', Style: term.StyleLineNumber, BgStyle: bg})
-	}
+	return look
 }
 
 func (e *EditorPaneWidget) SetDiffOverlay(o *DiffOverlay) {
@@ -374,17 +399,15 @@ func (e *EditorPaneWidget) renderPhantomRow(surface Surface, y, gutterW, editorW
 		return
 	}
 	if gutterW > 0 {
-		cell := term.Cell{Ch: ' ', Style: term.StyleLineNumber, BgStyle: term.StyleDiffDeleted}
-		for i := 0; i < gutterW; i++ {
-			surface.SetCell(i, y, cell)
-		}
 		num := 0
 		if e.LineNumbers && old.Num > 0 && row.startCol == 0 {
 			num = old.Num
 		}
-		e.drawGutterNumber(surface, y, gutterW, num, gutterW, cell)
 		if row.startCol == 0 {
-			e.renderDiffSign(surface, y, gutterW, diff.Deleted, term.StyleDiffDeleted)
+			e.renderEditorDiffGutter(surface, y, gutterW, num, diff.Deleted, term.StyleLineNumber)
+		} else {
+			look := e.DiffOverlay.gutterLook(diff.Deleted, term.StyleLineNumber, term.StyleDefault)
+			e.drawGutterNumber(surface, y, gutterW, 0, gutterW, term.Cell{Style: look.num, BgStyle: look.bg})
 		}
 	}
 	var spans []highlight.Span
@@ -415,40 +438,23 @@ func (e *EditorPaneWidget) renderPhantomRow(surface Surface, y, gutterW, editorW
 	}
 }
 
-func renderDiffGutterWithSigns(surface Surface, x, y, width int, line diff.SideLine, collapsedStyle term.Style, signs, colored bool) {
+// renderDiffGutterWithSigns draws the compact read-only gutter: the number
+// right-aligned, a space, then the sign.
+func renderDiffGutterWithSigns(surface Surface, x, y, width, num int, look diffGutterLook, signs bool) {
 	var buf [20]byte
 	number := buf[:0]
-	if line.Num > 0 {
-		number = strconv.AppendInt(number, int64(line.Num), 10)
+	if num > 0 {
+		number = strconv.AppendInt(number, int64(num), 10)
 	}
-	marker := ' '
-	style := term.StyleLineNumber
-	bgStyle := term.StyleDefault
-	switch line.Kind {
-	case diff.Added:
-		marker = '+'
-		style = term.StyleGutterAdded
-		bgStyle = term.StyleDiffAdded
-	case diff.Deleted:
-		marker = '−'
-		style = term.StyleGutterDeleted
-		bgStyle = term.StyleDiffDeleted
-	case diff.Collapsed:
-		marker = '▶'
-		if collapsedStyle != term.StyleDefault {
-			style = collapsedStyle
-		}
-	}
-	if !signs {
-		marker = ' '
-	}
-	if !colored && (line.Kind == diff.Added || line.Kind == diff.Deleted) {
-		style = term.StyleLineNumber
+	marker, markerStyle := look.mark, look.sign
+	if !signs || marker == 0 {
+		marker, markerStyle = ' ', look.num
 	}
 	column := 0
+	style := look.num
 	put := func(ch rune) {
 		if column < width {
-			surface.SetCell(x+column, y, term.Cell{Ch: ch, Style: style, BgStyle: bgStyle})
+			surface.SetCell(x+column, y, term.Cell{Ch: ch, Style: style, BgStyle: look.bg})
 		}
 		column++
 	}
@@ -468,5 +474,6 @@ func renderDiffGutterWithSigns(surface Surface, x, y, width int, line diff.SideL
 		}
 	}
 	put(' ')
+	style = markerStyle
 	put(marker)
 }
