@@ -118,6 +118,13 @@ func compactLiveDiff(full []diff.DiffLine, compact bool, revealed [][2]int) (row
 			}
 		}
 	}
+	n := 0
+	for i := range keep {
+		if keep[i] || i == 0 || keep[i-1] {
+			n++
+		}
+	}
+	rows, right = make([]diff.DiffLine, 0, n), make([]int, 0, n)
 	for i := 0; i < len(full); {
 		if keep[i] {
 			rows = append(rows, full[i])
