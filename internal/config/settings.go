@@ -160,7 +160,7 @@ func DefaultEditorSettings() EditorSettings {
 		InsertSpaces:            true,
 		DiffMode:                DiffModeSplit,
 		DiffContext:             DiffContextChanges,
-		DiffSigns:               true,
+		DiffSigns:               false,
 		DiffSignsColor:          true,
 		DiffGutterHighlight:     true,
 		LineNumbers:             true,

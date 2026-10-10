@@ -48,7 +48,7 @@ All editor settings are nested under the `editor` key.
 | `editor.diffWordWrap` | bool | `false` | Wrap long lines in diff views |
 | `editor.diffHighContrast` | bool | `false` | Strengthen changed-line visibility with semantic red/green foregrounds |
 | `editor.diffEmphasizeCollapsedRows` | bool | `false` | Emphasize collapsed or omitted-line rows in diff views |
-| `editor.diffSigns` | bool | `true` | Draw `+`/`−` (and `▶` on collapsed rows) in the diff gutter; the `minimal` gutter style never shows them |
+| `editor.diffSigns` | bool | `false` | Draw `+`/`−` (and the collapsed chevron on gap rows) in the diff gutter. Off by default: the gutter highlight already marks changed lines. The `minimal` gutter style never shows them |
 | `editor.diffSignsColor` | bool | `true` | Color diff gutter signs with the added/deleted colors; when off they use the line number color |
 | `editor.diffGutterHighlight` | bool | `true` | Color the line numbers of added and deleted rows and tint their gutter; when off the gutter stays plain and only the text is tinted |
 | `editor.autoIndent` | bool | `true` | Inherit the previous line's indent on Enter, plus one level after `{ ( [ :` (turn off for `noautoindent` behavior) |
@@ -228,7 +228,7 @@ When `editor.formatOnSave` is `true`, external formatters take priority over LSP
     "diffWordWrap": false,
     "diffHighContrast": false,
     "diffEmphasizeCollapsedRows": false,
-    "diffSigns": true,
+    "diffSigns": false,
     "diffSignsColor": true,
     "diffGutterHighlight": true,
     "autoIndent": true,

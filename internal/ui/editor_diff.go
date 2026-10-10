@@ -255,7 +255,7 @@ func (e *EditorPaneWidget) renderDiffGutterRow(surface Surface, y, gutterW, line
 		side = diff.SideLine{Num: o.num(line), Kind: o.kind(line)}
 	}
 	look := o.gutterLook(side.Kind, term.StyleLineNumber, collapsedDiffGutterStyle(side.Kind, o.EmphasizeGaps, o.gapHovered(line)))
-	renderDiffGutterWithSigns(surface, 0, y, gutterW, side.Num, look, e.diffSignCol(gutterW) >= 0)
+	renderDiffGutterWithSigns(surface, 0, y, gutterW, side.Num, look, e.diffMarkCol(gutterW, side.Kind) >= 0)
 }
 
 // diffGutterLook is how a diff row's gutter is drawn. Every diff gutter, the
@@ -300,11 +300,13 @@ func (o *DiffOverlay) gapChevron() rune {
 	return o.GapChevron
 }
 
-// diffSignCol is where an editor-layout gutter draws +, − and ▶, or -1 when
-// signs are off; the minimal gutter has no room for them.
-func (e *EditorPaneWidget) diffSignCol(gutterW int) int {
+// diffMarkCol is where an editor-layout gutter draws a row's mark, or -1 when
+// it has none: + and − follow the signs setting, while a gap row's chevron
+// always shows because it is what expands the gap. The minimal gutter has no
+// room for either.
+func (e *EditorPaneWidget) diffMarkCol(gutterW int, kind diff.LineKind) int {
 	o := e.DiffOverlay
-	if o == nil || !o.Signs || e.GutterStyle == "minimal" || gutterW < 3 {
+	if o == nil || (!o.Signs && kind != diff.Collapsed) || e.GutterStyle == "minimal" || gutterW < 3 {
 		return -1
 	}
 	if e.GutterStyle == "extended" {
@@ -318,7 +320,7 @@ func (e *EditorPaneWidget) diffSignCol(gutterW int) int {
 func (e *EditorPaneWidget) renderEditorDiffGutter(surface Surface, y, gutterW, num int, kind diff.LineKind, base term.Style) diffGutterLook {
 	look := e.DiffOverlay.gutterLook(kind, base, term.StyleDefault)
 	e.drawGutterNumber(surface, y, gutterW, num, gutterW, term.Cell{Style: look.num, BgStyle: look.bg})
-	if col := e.diffSignCol(gutterW); col >= 0 && look.mark != 0 {
+	if col := e.diffMarkCol(gutterW, kind); col >= 0 && look.mark != 0 {
 		surface.SetCell(col, y, term.Cell{Ch: look.mark, Style: look.sign, BgStyle: look.bg})
 	}
 	return look
@@ -380,7 +382,7 @@ func (e *EditorPaneWidget) renderGapRow(surface Surface, y, gutterW, editorW, li
 		for x := 0; x < gutterW; x++ {
 			surface.SetCell(x, y, cell)
 		}
-		if col := e.diffSignCol(gutterW); col >= 0 {
+		if col := e.diffMarkCol(gutterW, diff.Collapsed); col >= 0 {
 			surface.SetCell(col, y, term.Cell{Ch: o.gapChevron(), Style: cell.Style})
 		}
 	}

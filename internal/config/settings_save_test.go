@@ -221,13 +221,13 @@ func TestDiffGutterSettingsAreAlwaysWritten(t *testing.T) {
 	}
 }
 
-func TestDiffGutterSettingsDefaultOnWhenMissing(t *testing.T) {
+func TestDiffGutterSettingsDefaultsWhenMissing(t *testing.T) {
 	dir := withTempConfigDir(t)
 	if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(`{"editor": {"tabSize": 2}}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	got := LoadSettings().Editor
-	if !got.DiffSigns || !got.DiffSignsColor || !got.DiffGutterHighlight {
-		t.Errorf("missing keys loaded as diffSigns=%v diffSignsColor=%v diffGutterHighlight=%v, want all true", got.DiffSigns, got.DiffSignsColor, got.DiffGutterHighlight)
+	if got.DiffSigns || !got.DiffSignsColor || !got.DiffGutterHighlight {
+		t.Errorf("missing keys loaded as diffSigns=%v diffSignsColor=%v diffGutterHighlight=%v, want false, true, true", got.DiffSigns, got.DiffSignsColor, got.DiffGutterHighlight)
 	}
 }

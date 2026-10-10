@@ -136,7 +136,7 @@ func NewDiffEditorWidget(filePath string, fd diff.FileDiff, oldLines, newLines [
 		pendingGap:      -1,
 		hoveredGap:      -1,
 		syntax:          true,
-		signs:           true,
+		signs:           false,
 		signsColor:      true,
 		gutterHighlight: true,
 		unified:         newDiffPane(),

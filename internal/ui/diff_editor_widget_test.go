@@ -125,6 +125,7 @@ func TestDiffEditorExtendedModeTogglesContext(t *testing.T) {
 func TestDiffEditorUnifiedBufferStacksRemovedBeforeAdded(t *testing.T) {
 	fd := diff.Parse("--- a/test.go\n+++ b/test.go\n@@ -1,2 +1,2 @@\n-old one\n-old two\n+new one\n+new two\n")
 	d := NewDiffEditorWidget("test.go", fd, nil, nil, false)
+	d.SetDiffSigns(true)
 	d.SetUnified(true)
 	want := "old one|old two|new one|new two"
 	if got := strings.Join(d.unified.Buf.Lines[:4], "|"); got != want {

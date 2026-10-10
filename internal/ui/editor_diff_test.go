@@ -63,7 +63,9 @@ func TestEditorRendersDiffOverlay(t *testing.T) {
 	newLines := []string{"a", "B", "c", "e", "f"}
 	e := newRowsEditor(newLines, 20, 8)
 	e.LineNumbers = true
-	e.SetDiffOverlay(fullLiveDiff(oldLines, newLines).liveUnified)
+	live := fullLiveDiff(oldLines, newLines)
+	live.SetDiffSigns(true)
+	e.SetDiffOverlay(live.liveUnified)
 
 	grid := makeGrid(20, 8)
 	e.Render(NewRenderSurface(grid, Rect{X: 0, Y: 0, W: 20, H: 8}))
@@ -201,14 +203,13 @@ func TestReadOnlyDiffSignsToggle(t *testing.T) {
 		}
 		return sb.String()
 	}
-	if g := render(); !strings.ContainsRune(g, '+') || !strings.ContainsRune(g, '−') {
-		t.Fatalf("signs missing by default: %q", g)
-	}
-	d.SetDiffSigns(false)
 	if g := render(); strings.ContainsAny(g, "+−") {
-		t.Fatalf("signs drawn while off: %q", g)
+		t.Fatalf("signs drawn by default: %q", g)
 	}
 	d.SetDiffSigns(true)
+	if g := render(); !strings.ContainsRune(g, '+') || !strings.ContainsRune(g, '−') {
+		t.Fatalf("signs missing while on: %q", g)
+	}
 	d.setGutterStyle("minimal")
 	if g := render(); strings.ContainsAny(g, "+−") {
 		t.Fatalf("signs drawn in the minimal gutter: %q", g)
@@ -271,6 +272,7 @@ func TestDiffGutterHighlight(t *testing.T) {
 		e.GutterStyle = "compact"
 		e.Passive = true
 		live := fullLiveDiff(oldLines, newLines)
+		live.SetDiffSigns(true)
 		live.SetDiffGutterHighlight(highlight)
 		e.SetDiffOverlay(live.liveUnified)
 		grid := makeGrid(30, 6)
@@ -279,6 +281,7 @@ func TestDiffGutterHighlight(t *testing.T) {
 
 		d := NewDiffEditorWidget("f.txt", diff.FileDiff{}, oldLines, newLines, true)
 		d.SetMode(DiffModeUnified)
+		d.SetDiffSigns(true)
 		d.SetDiffGutterHighlight(highlight)
 		grid = makeGrid(30, 6)
 		d.SetRect(Rect{W: 30, H: 6})
@@ -311,11 +314,12 @@ func TestDiffSignsColor(t *testing.T) {
 		e.LineNumbers = true
 		e.GutterStyle = "compact"
 		d := fullLiveDiff([]string{"a", "b", "c"}, []string{"a", "B", "c"})
+		d.SetDiffSigns(true)
 		d.SetDiffSignsColor(colored)
 		e.SetDiffOverlay(d.liveUnified)
 		grid := makeGrid(30, 6)
 		e.Render(NewRenderSurface(grid, Rect{X: 0, Y: 0, W: 30, H: 6}))
-		col := e.diffSignCol(e.GutterWidth())
+		col := e.diffMarkCol(e.GutterWidth(), diff.Added)
 		return grid[1][col].Style, grid[2][col].Style
 	}
 	if del, add := signStyles(true); del != term.StyleGutterDeleted || add != term.StyleGutterAdded {
@@ -326,6 +330,7 @@ func TestDiffSignsColor(t *testing.T) {
 	}
 
 	d := NewDiffEditorWidget("f.txt", diff.FileDiff{}, []string{"a", "b"}, []string{"a", "B"}, true)
+	d.SetDiffSigns(true)
 	d.SetMode(DiffModeUnified)
 	readOnlyStyles := func() map[rune]term.Style {
 		grid := makeGrid(30, 4)

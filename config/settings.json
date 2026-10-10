@@ -17,7 +17,7 @@
     "diffWordWrap": false,
     "diffHighContrast": false,
     "diffEmphasizeCollapsedRows": false,
-    "diffSigns": true,
+    "diffSigns": false,
     "diffSignsColor": true,
     "diffGutterHighlight": true,
     "lineNumbers": true,
