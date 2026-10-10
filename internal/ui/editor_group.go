@@ -2243,6 +2243,7 @@ func (g *EditorGroupWidget) ensureTabIdentities() {
 }
 
 func (g *EditorGroupWidget) Render(surface Surface) {
+	defer highlight.HoldWarmers()()
 	g.syncTabs()
 	w, h := surface.Size()
 	r := g.GetRect()

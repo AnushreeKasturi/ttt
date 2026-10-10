@@ -94,3 +94,22 @@ func TestProgressiveHighlightOffIsSynchronous(t *testing.T) {
 		t.Fatalf("with progressive mode off, deep line = %v, want %v", got, want)
 	}
 }
+
+func TestHeldWarmersWaitForTheFrame(t *testing.T) {
+	lines := commentedFile(600)
+	h := New("main.go")
+	notified := make(chan struct{}, 8)
+	h.SetProgressive(func() { notified <- struct{}{} })
+	release := HoldWarmers()
+	h.BeginPass()
+	h.HighlightLineAt(lines, 500)
+	h.EndPass()
+	select {
+	case <-notified:
+		release()
+		t.Fatal("a held worker tokenized during the frame")
+	case <-time.After(50 * time.Millisecond):
+	}
+	release()
+	waitNotified(t, notified)
+}

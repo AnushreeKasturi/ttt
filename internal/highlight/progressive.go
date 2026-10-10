@@ -171,8 +171,43 @@ func (p *progressive) warmTo(idx int) {
 	w.mu.Unlock()
 }
 
+var frameHold struct {
+	mu   sync.Mutex
+	n    int
+	done *sync.Cond
+}
+
+// HoldWarmers keeps every background tokenizer idle until the returned
+// release runs. Workers share each language's grammar, whose lock would
+// otherwise serialize them with the frame still being drawn.
+func HoldWarmers() (release func()) {
+	frameHold.mu.Lock()
+	frameHold.n++
+	frameHold.mu.Unlock()
+	return func() {
+		frameHold.mu.Lock()
+		frameHold.n--
+		if frameHold.n == 0 && frameHold.done != nil {
+			frameHold.done.Broadcast()
+		}
+		frameHold.mu.Unlock()
+	}
+}
+
+func waitForFrame() {
+	frameHold.mu.Lock()
+	for frameHold.n > 0 {
+		if frameHold.done == nil {
+			frameHold.done = sync.NewCond(&frameHold.mu)
+		}
+		frameHold.done.Wait()
+	}
+	frameHold.mu.Unlock()
+}
+
 func (w *warmer) run(doc lineDoc, notify func()) {
 	for {
+		waitForFrame()
 		w.mu.Lock()
 		for w.pause > 0 && w.reached < w.target {
 			w.resume().Wait()
