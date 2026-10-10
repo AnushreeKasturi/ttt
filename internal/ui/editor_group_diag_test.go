@@ -126,3 +126,37 @@ func TestInlineDiffStopsBackgroundHighlightingWhenItEnds(t *testing.T) {
 		}
 	}
 }
+
+func TestEditableSplitSharesSingleLineHighlighting(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "main.go")
+	if err := os.WriteFile(path, []byte("package main\n\nfunc B() {}\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	g := NewEditorGroupWidget(nil, 4, true, "extended")
+	g.SyntaxHighlight = true
+	g.DiffMode = DiffModeSplit
+	g.OpenFile(path)
+	if !g.EnableInlineDiff(path, []string{"package main", "", "func b() {}"}) {
+		t.Fatal("diff mode did not turn on")
+	}
+	grid := makeGrid(80, 10)
+	g.SetRect(Rect{X: 0, Y: 0, W: 80, H: 10})
+	g.Render(NewRenderSurface(grid, Rect{X: 0, Y: 0, W: 80, H: 10}))
+	d := g.tabs[g.active].Diff
+	live := g.Editor.Highlighter
+	if live == nil {
+		t.Fatal("the file has no highlighter")
+	}
+	for _, p := range []*EditorPaneWidget{d.left} {
+		if p.Highlighter != nil && !p.Highlighter.SharesSingleLinesWith(live) {
+			t.Error("the HEAD pane highlights unchanged lines separately from the file")
+		}
+	}
+	if hl := d.docSyntax.old.hl; hl != nil && !hl.SharesSingleLinesWith(live) {
+		t.Error("the HEAD side highlights unchanged lines separately from the file")
+	}
+	if d.left.Highlighter == nil && d.docSyntax.old.hl == nil {
+		t.Fatal("the HEAD side was never highlighted")
+	}
+}

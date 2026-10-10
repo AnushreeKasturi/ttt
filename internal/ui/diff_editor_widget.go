@@ -208,12 +208,16 @@ func (d *DiffEditorWidget) ensureHighlighters(panes ...*EditorPaneWidget) {
 			break
 		}
 	}
+	lines := peer
+	if lines == nil && d.live != nil {
+		lines = d.live.Highlighter
+	}
 	for _, p := range panes {
 		if p != nil && p != d.live && p.Highlighter == nil {
 			p.Highlighter = highlight.New(d.FilePath)
 			p.Highlighter.ShareTokens(peer)
 			p.Highlighter.SetProgressive(d.redraw)
-			p.Highlighter.ShareSingleLines(peer)
+			p.Highlighter.ShareSingleLines(lines)
 			if peer == nil {
 				peer = p.Highlighter
 			}

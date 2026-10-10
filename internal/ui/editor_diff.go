@@ -78,6 +78,9 @@ type diffSideSyntax struct {
 	lines  []string
 	notify func()
 	peer   *diffSideSyntax
+	// anchor is the editable side's own highlighter, whose single-line cache
+	// the HEAD side shares while both draw the same unchanged lines.
+	anchor *highlight.Highlighter
 }
 
 func (s *diffSideSyntax) setNotify(notify func()) {
@@ -113,6 +116,9 @@ func (s *diffSideSyntax) spans(num int, text string) ([]highlight.Span, bool) {
 		}
 		s.hl.ShareTokens(peer)
 		s.hl.SetProgressive(s.notify)
+		if peer == nil {
+			peer = s.anchor
+		}
 		s.hl.ShareSingleLines(peer)
 	}
 	return s.hl.HighlightLineAt(s.lines, num-1), true

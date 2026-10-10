@@ -67,6 +67,7 @@ func (d *DiffEditorWidget) SetLiveDiff(base []string, lines []diff.DiffLine, ver
 
 func (d *DiffEditorWidget) bind(e *EditorPaneWidget) {
 	d.live = e
+	d.docSyntax.old.anchor, d.docSyntax.new.anchor = e.Highlighter, e.Highlighter
 	if d.liveBuf != e.Buf {
 		d.liveBuf = e.Buf
 		d.liveCursor = -1

@@ -108,6 +108,11 @@ func (h *Highlighter) ShareSingleLines(o *Highlighter) {
 	}
 }
 
+// SharesSingleLinesWith reports whether h and o use one single-line cache.
+func (h *Highlighter) SharesSingleLinesWith(o *Highlighter) bool {
+	return h != nil && o != nil && h.isolated == o.isolated
+}
+
 // HighlightLine highlights a line in isolation, as the first line of a file.
 func (h *Highlighter) HighlightLine(line string) []Span {
 	h.syncTokenTheme()
