@@ -99,8 +99,9 @@ type EditorSettings struct {
 	DiffWordWrap            bool             `json:"diffWordWrap"`
 	DiffHighContrast        bool             `json:"diffHighContrast,omitempty"`
 	DiffCollapsedEmphasis   bool             `json:"diffEmphasizeCollapsedRows,omitempty"`
-	DiffSigns               *bool            `json:"diffSigns,omitempty"`
-	DiffSignsColor          *bool            `json:"diffSignsColor,omitempty"`
+	DiffSigns               bool             `json:"diffSigns"`
+	DiffSignsColor          bool             `json:"diffSignsColor"`
+	DiffGutterHighlight     bool             `json:"diffGutterHighlight"`
 	LineNumbers             bool             `json:"lineNumbers"`
 	CursorStyle             string           `json:"cursorStyle,omitempty"`
 	FormatOnSave            bool             `json:"formatOnSave"`
@@ -145,14 +146,6 @@ func (e EditorSettings) IsGitGutterEnabled() bool {
 	return e.GitGutter == nil || *e.GitGutter
 }
 
-func (e EditorSettings) IsDiffSignsEnabled() bool {
-	return e.DiffSigns == nil || *e.DiffSigns
-}
-
-func (e EditorSettings) IsDiffSignsColorEnabled() bool {
-	return e.DiffSignsColor == nil || *e.DiffSignsColor
-}
-
 func (e EditorSettings) IsAutoDedentEnabled() bool {
 	return e.AutoDedent == nil || *e.AutoDedent
 }
@@ -167,6 +160,9 @@ func DefaultEditorSettings() EditorSettings {
 		InsertSpaces:            true,
 		DiffMode:                DiffModeSplit,
 		DiffContext:             DiffContextChanges,
+		DiffSigns:               true,
+		DiffSignsColor:          true,
+		DiffGutterHighlight:     true,
 		LineNumbers:             true,
 		InsertFinalNewline:      true,
 		GutterStyle:             "compact",

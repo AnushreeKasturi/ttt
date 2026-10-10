@@ -67,7 +67,7 @@ func TestCompactDiffGapsBeforeFirstAndAfterLastHunk(t *testing.T) {
 }
 
 func testGutterLook(kind diff.LineKind) diffGutterLook {
-	return (&DiffOverlay{SignsColor: true}).gutterLook(kind, term.StyleLineNumber, term.StyleDefault)
+	return (&DiffOverlay{SignsColor: true, GutterHighlight: true}).gutterLook(kind, term.StyleLineNumber, term.StyleDefault)
 }
 
 func TestDiffGutterMarksAndColorsChangedLines(t *testing.T) {

@@ -21,21 +21,22 @@ type splitPair struct{ l, r int }
 // render or event, so editing, saving and the rest of the editor keep working.
 func NewEditableDiffWidget(filePath string, base []string, lines []diff.DiffLine) *DiffEditorWidget {
 	d := &DiffEditorWidget{
-		FilePath:      filePath,
-		editable:      true,
-		oldLines:      base,
-		full:          lines,
-		contextMode:   DiffContextChangesOnly,
-		contextLoaded: true,
-		expandedGaps:  make(map[int]bool),
-		pendingGap:    -1,
-		hoveredGap:    -1,
-		syntax:        true,
-		signs:         true,
-		signsColor:    true,
-		left:          newDiffPane(),
-		liveCursor:    -1,
-		liveActive:    -1,
+		FilePath:        filePath,
+		editable:        true,
+		oldLines:        base,
+		full:            lines,
+		contextMode:     DiffContextChangesOnly,
+		contextLoaded:   true,
+		expandedGaps:    make(map[int]bool),
+		pendingGap:      -1,
+		hoveredGap:      -1,
+		syntax:          true,
+		signs:           true,
+		signsColor:      true,
+		gutterHighlight: true,
+		left:            newDiffPane(),
+		liveCursor:      -1,
+		liveActive:      -1,
 	}
 	d.left.NoWrapMargin = false
 	d.attachHighlighters()

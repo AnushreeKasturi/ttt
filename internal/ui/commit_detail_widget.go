@@ -151,6 +151,7 @@ type CommitDetailWidget struct {
 	emphasizeGaps   bool
 	signs           bool
 	signsColor      bool
+	gutterHighlight bool
 	gutterStyle     string
 	collapsedFiles  []bool
 
@@ -205,6 +206,7 @@ func NewCommitDetailWidget(dir, ref, short string, syntaxHighlight bool) *Commit
 		SyntaxHighlight: syntaxHighlight,
 		signs:           true,
 		signsColor:      true,
+		gutterHighlight: true,
 		capturedFile:    -1,
 	}
 }
@@ -220,6 +222,7 @@ func NewCurrentChangesWidget(dir string, syntaxHighlight bool) *CommitDetailWidg
 		SyntaxHighlight: syntaxHighlight,
 		signs:           true,
 		signsColor:      true,
+		gutterHighlight: true,
 		capturedFile:    -1,
 	}
 }
@@ -274,6 +277,11 @@ func (d *CommitDetailWidget) SetDiffSignsColor(enabled bool) {
 	d.applyViewOptions()
 }
 
+func (d *CommitDetailWidget) SetDiffGutterHighlight(enabled bool) {
+	d.gutterHighlight = enabled
+	d.applyViewOptions()
+}
+
 func (d *CommitDetailWidget) setGutterStyle(style string) {
 	if d.gutterStyle == style {
 		return
@@ -297,6 +305,7 @@ func (d *CommitDetailWidget) applyViewOptions() {
 		v.emphasizeGaps = d.emphasizeGaps
 		v.signs = d.signs
 		v.signsColor = d.signsColor
+		v.gutterHighlight = d.gutterHighlight
 		v.minGutter = d.gutterW
 		v.applyOverlayOptions()
 	}

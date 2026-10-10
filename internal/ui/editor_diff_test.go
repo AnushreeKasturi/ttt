@@ -262,6 +262,49 @@ func TestEditableAndReadOnlyDiffGuttersMatch(t *testing.T) {
 	}
 }
 
+func TestDiffGutterHighlight(t *testing.T) {
+	oldLines := []string{"a", "b", "c"}
+	newLines := []string{"a", "B", "c"}
+	render := func(highlight bool) (editable, readOnly [2]gutterCells) {
+		e := newRowsEditor(newLines, 30, 6)
+		e.LineNumbers = true
+		e.GutterStyle = "compact"
+		e.Passive = true
+		live := fullLiveDiff(oldLines, newLines)
+		live.SetDiffGutterHighlight(highlight)
+		e.SetDiffOverlay(live.liveUnified)
+		grid := makeGrid(30, 6)
+		e.Render(NewRenderSurface(grid, Rect{W: 30, H: 6}))
+		editable = [2]gutterCells{readGutter(grid, 1, e.GutterWidth()), readGutter(grid, 2, e.GutterWidth())}
+
+		d := NewDiffEditorWidget("f.txt", diff.FileDiff{}, oldLines, newLines, true)
+		d.SetMode(DiffModeUnified)
+		d.SetDiffGutterHighlight(highlight)
+		grid = makeGrid(30, 6)
+		d.SetRect(Rect{W: 30, H: 6})
+		d.Render(NewRenderSurface(grid, Rect{W: 30, H: 6}))
+		readOnly = [2]gutterCells{readGutter(grid, 1, d.unified.GutterWidth()), readGutter(grid, 2, d.unified.GutterWidth())}
+		return editable, readOnly
+	}
+	on := [2]gutterCells{
+		{num: term.StyleGutterDeleted, bg: term.StyleDiffDeleted, sign: term.StyleGutterDeleted},
+		{num: term.StyleGutterAdded, bg: term.StyleDiffAdded, sign: term.StyleGutterAdded},
+	}
+	off := [2]gutterCells{
+		{num: term.StyleLineNumber, sign: term.StyleGutterDeleted},
+		{num: term.StyleLineNumber, sign: term.StyleGutterAdded},
+	}
+	for _, tt := range []struct {
+		highlight bool
+		want      [2]gutterCells
+	}{{true, on}, {false, off}} {
+		editable, readOnly := render(tt.highlight)
+		if editable != tt.want || readOnly != tt.want {
+			t.Errorf("highlight %v: editable %+v, read-only %+v, want %+v", tt.highlight, editable, readOnly, tt.want)
+		}
+	}
+}
+
 func TestDiffSignsColor(t *testing.T) {
 	signStyles := func(colored bool) (deleted, added term.Style) {
 		e := newRowsEditor([]string{"a", "B", "c"}, 30, 6)

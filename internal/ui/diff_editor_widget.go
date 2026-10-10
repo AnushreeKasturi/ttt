@@ -44,6 +44,7 @@ type DiffEditorWidget struct {
 	highContrast    bool
 	signs           bool
 	signsColor      bool
+	gutterHighlight bool
 	emphasizeGaps   bool
 	hoveredGap      int
 	minGutter       int
@@ -123,23 +124,24 @@ type diffSearchRef struct {
 
 func NewDiffEditorWidget(filePath string, fd diff.FileDiff, oldLines, newLines []string, extended bool) *DiffEditorWidget {
 	d := &DiffEditorWidget{
-		FilePath:      filePath,
-		fileDiff:      fd,
-		oldLines:      oldLines,
-		newLines:      newLines,
-		extended:      extended,
-		contextMode:   DiffContextChangesOnly,
-		contextLoaded: oldLines != nil || newLines != nil,
-		expandedGaps:  make(map[int]bool),
-		pendingGap:    -1,
-		hoveredGap:    -1,
-		syntax:        true,
-		signs:         true,
-		signsColor:    true,
-		unified:       newDiffPane(),
-		left:          newDiffPane(),
-		right:         newDiffPane(),
-		deferPanes:    true,
+		FilePath:        filePath,
+		fileDiff:        fd,
+		oldLines:        oldLines,
+		newLines:        newLines,
+		extended:        extended,
+		contextMode:     DiffContextChangesOnly,
+		contextLoaded:   oldLines != nil || newLines != nil,
+		expandedGaps:    make(map[int]bool),
+		pendingGap:      -1,
+		hoveredGap:      -1,
+		syntax:          true,
+		signs:           true,
+		signsColor:      true,
+		gutterHighlight: true,
+		unified:         newDiffPane(),
+		left:            newDiffPane(),
+		right:           newDiffPane(),
+		deferPanes:      true,
 	}
 	if extended {
 		d.contextMode = DiffContextFullFile
@@ -384,6 +386,11 @@ func (d *DiffEditorWidget) SetDiffSignsColor(enabled bool) {
 	d.applyOverlayOptions()
 }
 
+func (d *DiffEditorWidget) SetDiffGutterHighlight(enabled bool) {
+	d.gutterHighlight = enabled
+	d.applyOverlayOptions()
+}
+
 func (d *DiffEditorWidget) setGutterStyle(style string) {
 	for _, p := range d.panes() {
 		p.GutterStyle = style
@@ -405,6 +412,7 @@ func (d *DiffEditorWidget) applyOverlayOptions() {
 			o.HighContrast = d.highContrast
 			o.Signs = d.signs
 			o.SignsColor = d.signsColor
+			o.GutterHighlight = d.gutterHighlight
 			o.EmphasizeGaps = d.emphasizeGaps
 			o.HoveredGap = d.hoveredGap
 			o.MinGutter = d.minGutter

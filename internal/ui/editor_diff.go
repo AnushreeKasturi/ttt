@@ -24,14 +24,15 @@ type DiffOverlay struct {
 	// Nums switches the gutter to the diff layout (line number plus change
 	// marker); 0 leaves a row unnumbered. Read-only diffs number their
 	// synthetic buffers from the source files this way.
-	Nums          []int
-	Gaps          map[int]int
-	HoveredGap    int
-	HighContrast  bool
-	EmphasizeGaps bool
-	Signs         bool
-	SignsColor    bool
-	MinGutter     int
+	Nums            []int
+	Gaps            map[int]int
+	HoveredGap      int
+	HighContrast    bool
+	EmphasizeGaps   bool
+	Signs           bool
+	SignsColor      bool
+	GutterHighlight bool
+	MinGutter       int
 
 	// DeletedMatches holds find matches on deleted rows, keyed like Deleted;
 	// a match's Line is the row's index in its block. DeletedActive is the
@@ -284,6 +285,9 @@ func (o *DiffOverlay) gutterLook(kind diff.LineKind, base, collapsed term.Style)
 	}
 	if o != nil && !o.SignsColor {
 		look.sign = term.StyleLineNumber
+	}
+	if o != nil && !o.GutterHighlight {
+		look.num, look.bg = base, 0
 	}
 	return look
 }

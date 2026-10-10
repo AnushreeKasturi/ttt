@@ -50,6 +50,7 @@ All editor settings are nested under the `editor` key.
 | `editor.diffEmphasizeCollapsedRows` | bool | `false` | Emphasize collapsed or omitted-line rows in diff views |
 | `editor.diffSigns` | bool | `true` | Draw `+`/`−` (and `▶` on collapsed rows) in the diff gutter; the `minimal` gutter style never shows them |
 | `editor.diffSignsColor` | bool | `true` | Color diff gutter signs with the added/deleted colors; when off they use the line number color |
+| `editor.diffGutterHighlight` | bool | `true` | Color the line numbers of added and deleted rows and tint their gutter; when off the gutter stays plain and only the text is tinted |
 | `editor.autoIndent` | bool | `true` | Inherit the previous line's indent on Enter, plus one level after `{ ( [ :` (turn off for `noautoindent` behavior) |
 | `editor.autoDedent` | bool | `true` | Dedent one level when typing a closing `} ) ]` on a blank line |
 | `editor.lineNumbers` | bool | `true` | Show line numbers in the gutter |
@@ -228,6 +229,7 @@ When `editor.formatOnSave` is `true`, external formatters take priority over LSP
     "diffEmphasizeCollapsedRows": false,
     "diffSigns": true,
     "diffSignsColor": true,
+    "diffGutterHighlight": true,
     "autoIndent": true,
     "autoDedent": true,
     "lineNumbers": true,
