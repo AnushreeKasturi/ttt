@@ -306,11 +306,14 @@ func (d *DiffEditorWidget) syncLive() {
 		d.placeInitialCursor()
 		return
 	}
-	if edited || e.Cursor.Line != d.liveCursor {
+	if edited || e.Cursor.Line != d.liveCursor || e.revealGapRow {
 		d.liveCursor = e.Cursor.Line
 		if gap, ok := d.hiddenCursorGap(); ok {
 			d.expandContextGap(gap)
+		} else if e.revealGapRow {
+			d.revealCursorGap()
 		}
+		e.revealGapRow = false
 	}
 }
 

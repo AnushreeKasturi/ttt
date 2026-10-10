@@ -102,6 +102,10 @@ type EditorPaneWidget struct {
 	topOffsetLine           int
 	phantoms                map[int]int
 	DiffOverlay             *DiffOverlay
+
+	// revealGapRow asks a diff to open a gap row the cursor jumped onto,
+	// where moving onto one normally leaves it collapsed.
+	revealGapRow bool
 }
 
 func NewEditorPaneWidget(buf *buffer.Buffer, cur *cursor.Cursor, vp *view.Viewport) *EditorPaneWidget {
@@ -533,6 +537,10 @@ func (e *EditorPaneWidget) skipHiddenLineDown() {
 		e.Cursor.Line = e.Buf.ClampLine(end + 1)
 		e.clampCursorCol()
 	}
+	e.skipFoldDown()
+}
+
+func (e *EditorPaneWidget) skipFoldDown() {
 	if e.Folds == nil {
 		return
 	}
@@ -550,6 +558,10 @@ func (e *EditorPaneWidget) skipHiddenLineUp() {
 		e.Cursor.Line = e.Buf.ClampLine(gapLine)
 		e.clampCursorCol()
 	}
+	e.skipFoldUp()
+}
+
+func (e *EditorPaneWidget) skipFoldUp() {
 	if e.Folds == nil {
 		return
 	}

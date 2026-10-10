@@ -235,3 +235,22 @@ func TestEditableSplitWrapDrawsTheSameTextOnBothSides(t *testing.T) {
 		t.Fatalf("split sides wrap differently:\n%q\n%q", halves[0], halves[1])
 	}
 }
+
+func TestEditableFileEdgesRevealTheEdgeGaps(t *testing.T) {
+	old, cur := gapFile()
+	f := newLiveDiffFixture(t, old, cur, DiffModeUnified, 100, 40)
+	f.render()
+	f.e.MoveToFileEdge(true, false)
+	screen := strings.Join(f.render(), "\n")
+	if f.e.Cursor.Line != len(cur)-1 || !strings.Contains(screen, "line 30") {
+		t.Fatalf("ctrl+end left the cursor on line %d:\n%s", f.e.Cursor.Line+1, screen)
+	}
+	f.e.MoveToFileEdge(false, true)
+	screen = strings.Join(f.render(), "\n")
+	if f.e.Cursor.Line != 0 || !strings.Contains(screen, "line 01") {
+		t.Fatalf("shift+ctrl+home left the cursor on line %d:\n%s", f.e.Cursor.Line+1, screen)
+	}
+	if !f.e.Selection.Active {
+		t.Fatal("shift+ctrl+home did not select")
+	}
+}

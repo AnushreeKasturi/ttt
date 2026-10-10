@@ -54,7 +54,8 @@ func wordBoundaryRight(runes []rune, col int) int {
 }
 
 // MoveToFileEdge puts the cursor at the start of the first line or the end
-// of the last, extending the selection when shift is held.
+// of the last, extending the selection when shift is held. A diff gap hiding
+// that line is revealed by the diff on its next render, not skipped.
 func (e *EditorPaneWidget) MoveToFileEdge(end, shift bool) {
 	if e.Buf == nil || len(e.Buf.Lines) == 0 {
 		return
@@ -64,11 +65,12 @@ func (e *EditorPaneWidget) MoveToFileEdge(end, shift bool) {
 	if end {
 		e.Cursor.Line = len(e.Buf.Lines) - 1
 		e.Cursor.Col = len([]rune(e.Buf.Lines[e.Cursor.Line]))
-		e.skipHiddenLineUp()
+		e.skipFoldUp()
 	} else {
 		e.Cursor.Line, e.Cursor.Col = 0, 0
-		e.skipHiddenLineDown()
+		e.skipFoldDown()
 	}
+	e.revealGapRow = true
 	e.scrollViewport()
 }
 
