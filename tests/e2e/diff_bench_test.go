@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,6 +14,7 @@ import (
 	"github.com/eugenioenko/ttt/internal/config"
 	"github.com/eugenioenko/ttt/internal/core/diff"
 	"github.com/eugenioenko/ttt/internal/git"
+	"github.com/eugenioenko/ttt/internal/highlight"
 
 	"github.com/gdamore/tcell/v3"
 )
@@ -91,25 +93,33 @@ func newDiffBenchHarness(b *testing.B, pair diffBenchPair, mode, context string,
 	h := newBenchHarness(b)
 	setDiffView(h, mode, context, wrap)
 	openBenchDiff(h, pair, fullFile)
+	settleHighlight(h)
 	return h
+}
+
+// settleHighlight waits out background highlighting, so a scenario that
+// acts on an open diff times steady state the way a user meets it.
+func settleHighlight(h *testHarness) {
+	for {
+		for highlight.Warming() > 0 {
+			time.Sleep(100 * time.Microsecond)
+		}
+		h.redraw()
+		if highlight.Warming() == 0 {
+			return
+		}
+	}
 }
 
 // openChangesFromGit mirrors OpenChangeDiff after its git calls. Keep it in step
 // with that function so open_changes_large measures the app, not git.
-func openChangesFromGit(b *testing.B, h *testHarness, path, diffText, head string) {
-	b.Helper()
-	trim := func(text string) []string {
-		lines := strings.Split(text, "\n")
-		if len(lines) > 0 && lines[len(lines)-1] == "" {
-			lines = lines[:len(lines)-1]
-		}
-		return lines
+func openChangesFromGit(h *testHarness, path, index string) {
+	base := strings.Split(strings.ReplaceAll(index, "\r\n", "\n"), "\n")
+	if len(base) > 0 && base[len(base)-1] == "" {
+		base = base[:len(base)-1]
 	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		b.Fatal(err)
-	}
-	h.app.EditorGroup.OpenDiff(diffBenchFile, diff.Parse(diffText), trim(head), trim(string(data)), false)
+	h.app.EditorGroup.OpenFile(path)
+	h.app.EditorGroup.EnableInlineDiff(path, base)
 	h.app.FocusEditorIfEnabled()
 }
 
@@ -294,6 +304,7 @@ func BenchmarkDiff(b *testing.B) {
 					for b.Loop() {
 						b.StopTimer()
 						openBenchDiff(h, large, true)
+						settleHighlight(h)
 						b.StartTimer()
 						h.pressKey(tcell.KeyEnd, tcell.ModCtrl)
 						b.StopTimer()
@@ -309,6 +320,7 @@ func BenchmarkDiff(b *testing.B) {
 					for b.Loop() {
 						b.StopTimer()
 						openBenchDiff(h, large, false)
+						settleHighlight(h)
 						x, y, ok := gapRow(h)
 						if !ok {
 							b.Fatalf("no collapsed-lines row on screen:\n%s", h.screenText())
@@ -325,6 +337,10 @@ func BenchmarkDiff(b *testing.B) {
 
 		b.Run("toggle_split_unified", func(b *testing.B) {
 			h := newDiffBenchHarness(b, large, config.DiffModeSplit, full, false, true)
+			h.exec("diff.toggleUnified")
+			settleHighlight(h)
+			h.exec("diff.toggleUnified")
+			settleHighlight(h)
 			b.ReportAllocs()
 			for b.Loop() {
 				h.exec("diff.toggleUnified")
@@ -341,6 +357,7 @@ func BenchmarkDiff(b *testing.B) {
 			openBenchFile(b, h, "file_tab.go", repeatToLines(src, largeLines()))
 			filePath := filepath.Join(h.dir, "file_tab.go")
 			openBenchDiff(h, large, true)
+			settleHighlight(h)
 			diffTab := diffBenchFile + " (diff)"
 			onDiff := true
 			b.ReportAllocs()
@@ -368,17 +385,13 @@ func BenchmarkDiff(b *testing.B) {
 			writeBenchLines(b, path, large.new)
 			// Git's process time is not the diff view's; fetch its output once and
 			// time what OpenChangeDiff does with it.
-			diffText, err := git.DiffFile(h.dir, diffBenchFile)
-			if err != nil {
-				b.Fatal(err)
-			}
-			head, err := git.ShowFile(h.dir, diffBenchFile, "HEAD")
+			index, err := git.ShowIndexFileContext(context.Background(), h.dir, diffBenchFile)
 			if err != nil {
 				b.Fatal(err)
 			}
 			b.ReportAllocs()
 			for b.Loop() {
-				openChangesFromGit(b, h, path, diffText, head)
+				openChangesFromGit(h, path, index)
 				h.redraw()
 				b.StopTimer()
 				h.exec("tab.close")
@@ -421,6 +434,7 @@ func BenchmarkDiff(b *testing.B) {
 			h, ref := setup(b)
 			h.app.OpenCommitDetail(h.dir, ref, ref[:7])
 			awaitBenchCommitDetail(b, h)
+			settleHighlight(h)
 			steps := 0
 			b.ReportAllocs()
 			for b.Loop() {
