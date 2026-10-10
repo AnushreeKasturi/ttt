@@ -226,6 +226,7 @@ When `editor.formatOnSave` is `true`, external formatters take priority over LSP
     "diffMode": "split",
     "diffContext": "changes",
     "diffWordWrap": false,
+    "diffHighContrast": false,
     "diffEmphasizeCollapsedRows": false,
     "diffSigns": true,
     "diffSignsColor": true,

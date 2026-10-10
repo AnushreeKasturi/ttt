@@ -214,7 +214,7 @@ func TestDiffGutterSettingsAreAlwaysWritten(t *testing.T) {
 	if err := json.Unmarshal(data, &raw); err != nil {
 		t.Fatal(err)
 	}
-	for _, key := range []string{"diffSigns", "diffSignsColor", "diffGutterHighlight"} {
+	for _, key := range []string{"diffSigns", "diffSignsColor", "diffGutterHighlight", "diffHighContrast", "diffEmphasizeCollapsedRows"} {
 		if string(raw.Editor[key]) != "false" {
 			t.Errorf("editor.%s = %s, want false written to settings.json", key, raw.Editor[key])
 		}

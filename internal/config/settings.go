@@ -97,8 +97,8 @@ type EditorSettings struct {
 	DiffMode                string           `json:"diffMode"`
 	DiffContext             string           `json:"diffContext"`
 	DiffWordWrap            bool             `json:"diffWordWrap"`
-	DiffHighContrast        bool             `json:"diffHighContrast,omitempty"`
-	DiffCollapsedEmphasis   bool             `json:"diffEmphasizeCollapsedRows,omitempty"`
+	DiffHighContrast        bool             `json:"diffHighContrast"`
+	DiffCollapsedEmphasis   bool             `json:"diffEmphasizeCollapsedRows"`
 	DiffSigns               bool             `json:"diffSigns"`
 	DiffSignsColor          bool             `json:"diffSignsColor"`
 	DiffGutterHighlight     bool             `json:"diffGutterHighlight"`
