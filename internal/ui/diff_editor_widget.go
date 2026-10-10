@@ -45,6 +45,7 @@ type DiffEditorWidget struct {
 	signs           bool
 	signsColor      bool
 	gutterHighlight bool
+	gapChevron      rune
 	emphasizeGaps   bool
 	hoveredGap      int
 	minGutter       int
@@ -402,6 +403,11 @@ func (d *DiffEditorWidget) SetDiffCollapsedEmphasis(enabled bool) {
 	d.applyOverlayOptions()
 }
 
+func (d *DiffEditorWidget) SetChevrons(collapsed, _ rune) {
+	d.gapChevron = collapsed
+	d.applyOverlayOptions()
+}
+
 func (d *DiffEditorWidget) applyOverlayOptions() {
 	overlays := []*DiffOverlay{d.leftBase, d.rightBase, d.liveUnified}
 	for _, p := range d.viewPanes() {
@@ -413,6 +419,7 @@ func (d *DiffEditorWidget) applyOverlayOptions() {
 			o.Signs = d.signs
 			o.SignsColor = d.signsColor
 			o.GutterHighlight = d.gutterHighlight
+			o.GapChevron = d.gapChevron
 			o.EmphasizeGaps = d.emphasizeGaps
 			o.HoveredGap = d.hoveredGap
 			o.MinGutter = d.minGutter

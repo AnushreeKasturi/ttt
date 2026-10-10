@@ -32,6 +32,7 @@ type DiffOverlay struct {
 	Signs           bool
 	SignsColor      bool
 	GutterHighlight bool
+	GapChevron      rune
 	MinGutter       int
 
 	// DeletedMatches holds find matches on deleted rows, keyed like Deleted;
@@ -275,7 +276,7 @@ func (o *DiffOverlay) gutterLook(kind diff.LineKind, base, collapsed term.Style)
 	case diff.Deleted:
 		look.mark, look.num, look.bg, look.sign = '−', term.StyleGutterDeleted, term.StyleDiffDeleted, term.StyleGutterDeleted
 	case diff.Collapsed:
-		look.mark = '▶'
+		look.mark = o.gapChevron()
 		if collapsed != term.StyleDefault {
 			look.num, look.sign = collapsed, collapsed
 		}
@@ -290,6 +291,13 @@ func (o *DiffOverlay) gutterLook(kind diff.LineKind, base, collapsed term.Style)
 		look.num, look.bg = base, 0
 	}
 	return look
+}
+
+func (o *DiffOverlay) gapChevron() rune {
+	if o == nil || o.GapChevron == 0 {
+		return '▶'
+	}
+	return o.GapChevron
 }
 
 // diffSignCol is where an editor-layout gutter draws +, − and ▶, or -1 when
@@ -373,7 +381,7 @@ func (e *EditorPaneWidget) renderGapRow(surface Surface, y, gutterW, editorW, li
 			surface.SetCell(x, y, cell)
 		}
 		if col := e.diffSignCol(gutterW); col >= 0 {
-			surface.SetCell(col, y, term.Cell{Ch: '▶', Style: cell.Style})
+			surface.SetCell(col, y, term.Cell{Ch: o.gapChevron(), Style: cell.Style})
 		}
 	}
 	fg := rowStyle

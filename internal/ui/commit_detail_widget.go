@@ -276,6 +276,7 @@ func (d *CommitDetailWidget) SetDiffSigns(enabled bool) {
 
 func (d *CommitDetailWidget) SetChevrons(collapsed, expanded rune) {
 	d.chevronCollapsed, d.chevronExpanded = collapsed, expanded
+	d.applyViewOptions()
 }
 
 func (d *CommitDetailWidget) chevron(collapsed bool) rune {
@@ -325,6 +326,7 @@ func (d *CommitDetailWidget) applyViewOptions() {
 		v.signs = d.signs
 		v.signsColor = d.signsColor
 		v.gutterHighlight = d.gutterHighlight
+		v.gapChevron = d.chevronCollapsed
 		v.minGutter = d.gutterW
 		v.applyOverlayOptions()
 	}
