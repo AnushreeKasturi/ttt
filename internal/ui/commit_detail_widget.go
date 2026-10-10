@@ -138,22 +138,24 @@ type CommitDetailWidget struct {
 	Metadata string
 	Files    []CommitDetailFile
 
-	SyntaxHighlight bool
-	TopLine         int
-	LeftCol         int
-	wrapMode        DiffWrapMode
-	wrapExplicit    bool
-	mode            DiffMode
-	modeExplicit    bool
-	contextMode     DiffContextMode
-	contextExplicit bool
-	highContrast    bool
-	emphasizeGaps   bool
-	signs           bool
-	signsColor      bool
-	gutterHighlight bool
-	gutterStyle     string
-	collapsedFiles  []bool
+	SyntaxHighlight  bool
+	TopLine          int
+	LeftCol          int
+	wrapMode         DiffWrapMode
+	wrapExplicit     bool
+	mode             DiffMode
+	modeExplicit     bool
+	contextMode      DiffContextMode
+	contextExplicit  bool
+	highContrast     bool
+	emphasizeGaps    bool
+	signs            bool
+	signsColor       bool
+	gutterHighlight  bool
+	chevronCollapsed rune
+	chevronExpanded  rune
+	gutterStyle      string
+	collapsedFiles   []bool
 
 	rows            []commitDetailRow
 	visualRows      []commitDetailVisualRow
@@ -270,6 +272,23 @@ func (d *CommitDetailWidget) SetRedrawRequest(notify func()) {
 func (d *CommitDetailWidget) SetDiffSigns(enabled bool) {
 	d.signs = enabled
 	d.applyViewOptions()
+}
+
+func (d *CommitDetailWidget) SetChevrons(collapsed, expanded rune) {
+	d.chevronCollapsed, d.chevronExpanded = collapsed, expanded
+}
+
+func (d *CommitDetailWidget) chevron(collapsed bool) rune {
+	if collapsed {
+		if d.chevronCollapsed != 0 {
+			return d.chevronCollapsed
+		}
+		return '▶'
+	}
+	if d.chevronExpanded != 0 {
+		return d.chevronExpanded
+	}
+	return '▼'
 }
 
 func (d *CommitDetailWidget) SetDiffSignsColor(enabled bool) {
@@ -1057,11 +1076,7 @@ func (d *CommitDetailWidget) renderHeading(surface Surface, rowIndex int, row co
 	}
 	collapsed := row.fileIndex >= 0 && row.fileIndex < len(d.collapsedFiles) && d.collapsedFiles[row.fileIndex]
 	if !visual.continuation {
-		chevron := '▼'
-		if collapsed {
-			chevron = '▶'
-		}
-		surface.SetCell(1, y, term.Cell{Ch: chevron, Style: headingStyle, Bold: true})
+		surface.SetCell(1, y, term.Cell{Ch: d.chevron(collapsed), Style: headingStyle, Bold: true})
 	}
 	r := d.GetRect()
 	d.fileControls = append(d.fileControls, commitDetailControl{
@@ -1234,7 +1249,7 @@ func (d *CommitDetailWidget) renderStickyHeading(surface Surface, viewW int) {
 	if d.Files[row.fileIndex].Stage != CommitDetailStageNone {
 		headingStyle = StatusStyle(d.Files[row.fileIndex].Status)
 	}
-	surface.SetCell(1, 0, term.Cell{Ch: '▼', Style: headingStyle, Bold: true})
+	surface.SetCell(1, 0, term.Cell{Ch: d.chevron(false), Style: headingStyle, Bold: true})
 	path := truncateCommitDetailPath(commitDetailFileHeading(d.Files[row.fileIndex]), viewW-3)
 	drawTextSegment(surface, 3, 0, viewW-3, path, 0, 0, term.Cell{Ch: ' '}, func(_ int, ch rune) term.Cell {
 		return term.Cell{Ch: ch, Style: headingStyle, Bold: true}

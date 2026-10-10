@@ -293,3 +293,27 @@ func TestCommitDetailWrappedCollapsedContextUsesFullRowHitTarget(t *testing.T) {
 		})
 	}
 }
+
+func TestCommitDetailChevronsFollowConfiguredGlyphs(t *testing.T) {
+	detail := NewCommitDetailWidget("/repo", "full", "abc1234", false)
+	patch := diff.Parse("--- a/a.go\n+++ b/a.go\n@@ -1,1 +1,1 @@\n-old\n+new\n")
+	detail.SetDetail("Subject", []CommitDetailFile{{Path: "a.go", Diff: patch}, {Path: "b.go", Diff: patch}}, "")
+	detail.SetChevrons('>', 'v')
+	column := func() string {
+		detail.SetRect(Rect{W: 60, H: 15})
+		grid := makeGrid(60, 15)
+		detail.Render(NewRenderSurface(grid, Rect{W: 60, H: 15}))
+		var out strings.Builder
+		for y := range grid {
+			out.WriteRune(grid[y][1].Ch)
+		}
+		return out.String()
+	}
+	if got := column(); strings.Count(got, "v") < 2 || strings.ContainsRune(got, '▼') {
+		t.Fatalf("expanded file headings drew %q, want the configured 'v'", got)
+	}
+	detail.CollapseAllFiles()
+	if got := column(); strings.Count(got, ">") < 2 || strings.ContainsRune(got, '▶') {
+		t.Fatalf("collapsed file headings drew %q, want the configured '>'", got)
+	}
+}

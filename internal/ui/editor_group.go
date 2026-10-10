@@ -95,6 +95,8 @@ type EditorGroupWidget struct {
 	DiffSigns               bool
 	DiffSignsColor          bool
 	DiffGutterHighlight     bool
+	ChevronCollapsed        rune
+	ChevronExpanded         rune
 	DiffCollapsedEmphasis   bool
 	ImageProtocol           string
 	ImageCellW              int
@@ -590,6 +592,9 @@ func (g *EditorGroupWidget) ApplyDiffDefaults(surface DiffModeSurface) {
 		d.SetDiffSignsColor(g.DiffSignsColor)
 		d.SetDiffGutterHighlight(g.DiffGutterHighlight)
 	}
+	if c, ok := surface.(chevronSurface); ok {
+		c.SetChevrons(g.ChevronCollapsed, g.ChevronExpanded)
+	}
 	surface.SetDiffCollapsedEmphasis(g.DiffCollapsedEmphasis)
 }
 
@@ -634,6 +639,22 @@ func (g *EditorGroupWidget) SetDiffGutterHighlight(enabled bool) {
 			d.SetDiffGutterHighlight(enabled)
 		}
 	}
+}
+
+func (g *EditorGroupWidget) SetChevrons(collapsed, expanded rune) {
+	g.ChevronCollapsed, g.ChevronExpanded = collapsed, expanded
+	if g.Editor != nil {
+		g.Editor.FoldChevronCollapsed, g.Editor.FoldChevronExpanded = collapsed, expanded
+	}
+	for _, surface := range g.diffSurfaces() {
+		if c, ok := surface.(chevronSurface); ok {
+			c.SetChevrons(collapsed, expanded)
+		}
+	}
+}
+
+type chevronSurface interface {
+	SetChevrons(collapsed, expanded rune)
 }
 
 type diffSignsSurface interface {
