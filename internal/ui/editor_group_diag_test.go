@@ -100,3 +100,29 @@ func TestSeverityStyleWhenNoCustomStyle(t *testing.T) {
 		t.Errorf("expected StyleDiagWarning at (0,2), got %v", got)
 	}
 }
+
+func TestInlineDiffStopsBackgroundHighlightingWhenItEnds(t *testing.T) {
+	for _, end := range []string{"close tab", "disable", "re-enable"} {
+		g, path := openTabWithFile(t, "a\nB\nc\n")
+		g.RequestRedraw = func() {}
+		if !g.EnableInlineDiff(path, []string{"a", "b", "c"}) {
+			t.Fatalf("%s: diff mode did not turn on", end)
+		}
+		d := g.tabs[g.active].Diff
+		g.syncTabs()
+		if d.redraw == nil {
+			t.Fatalf("%s: diff has no redraw request to clear", end)
+		}
+		switch end {
+		case "close tab":
+			g.CloseTab()
+		case "disable":
+			g.DisableInlineDiff(path)
+		case "re-enable":
+			g.EnableInlineDiff(path, []string{"a", "b", "c"})
+		}
+		if d.redraw != nil {
+			t.Errorf("%s: the old diff still tokenizes in the background", end)
+		}
+	}
+}

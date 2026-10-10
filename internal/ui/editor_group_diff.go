@@ -24,6 +24,9 @@ func (g *EditorGroupWidget) EnableInlineDiff(path string, base []string) bool {
 	d := NewEditableDiffWidget(t.FilePath, base, diff.FullDiffLines(base, t.Buf.Lines))
 	d.SetSyntaxHighlight(g.SyntaxHighlight)
 	g.ApplyDiffDefaults(d)
+	if t.Diff != nil {
+		t.Diff.Close()
+	}
 	t.Diff = d
 	if i == g.active {
 		g.syncTabs()
@@ -37,6 +40,7 @@ func (g *EditorGroupWidget) DisableInlineDiff(path string) {
 		return
 	}
 	t := &g.tabs[i]
+	t.Diff.Close()
 	t.Diff = nil
 	if t.Folds != nil {
 		t.Folds.SetRanges(fold.ComputeIndentRanges(t.Buf.Lines))

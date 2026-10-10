@@ -734,6 +734,9 @@ func (g *EditorGroupWidget) ClosePluginTab(id string) {
 
 func (g *EditorGroupWidget) notifyContentTabClose(tab editorTab) {
 	tab.Highlighter.SetProgressive(nil)
+	if tab.Diff != nil {
+		tab.Diff.Close()
+	}
 	if tab.Content == nil {
 		return
 	}
