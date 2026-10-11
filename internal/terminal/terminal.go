@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/aymanbagabas/go-pty"
 	"github.com/eugenioenko/xterm-go"
@@ -21,7 +22,15 @@ const (
 
 const rawTailMax = 64 * 1024
 
+const (
+	hangupGrace   = 500 * time.Millisecond
+	readLoopGrace = time.Second
+)
+
 type Terminal struct {
+	// cbMu serializes OnUpdate/OnExit with Close, so no callback fires after
+	// Close returns. closed is written under both cbMu and mu.
+	cbMu       sync.Mutex
 	mu         sync.Mutex
 	term       *xterm.Terminal
 	pt         pty.Pty
@@ -136,12 +145,13 @@ func (t *Terminal) waitLoop() {
 
 	t.mu.Lock()
 	t.exited = true
-	closing := t.closed
 	t.pt.Close()
 	t.mu.Unlock()
 
 	// Close() already tears the tab down; firing OnExit there would close it twice.
-	if !closing && t.OnExit != nil {
+	t.cbMu.Lock()
+	defer t.cbMu.Unlock()
+	if !t.closed && t.OnExit != nil {
 		t.OnExit()
 	}
 }
@@ -153,12 +163,16 @@ func (t *Terminal) readLoop() {
 		n, err := t.pt.Read(buf)
 		if n > 0 {
 			t.mu.Lock()
-			t.term.Write(buf[:n])
-			t.appendRawTail(buf[:n])
+			if !t.closed {
+				t.term.Write(buf[:n])
+				t.appendRawTail(buf[:n])
+			}
 			t.mu.Unlock()
-			if t.OnUpdate != nil && t.updatePending.CompareAndSwap(false, true) {
+			t.cbMu.Lock()
+			if !t.closed && t.OnUpdate != nil && t.updatePending.CompareAndSwap(false, true) {
 				t.OnUpdate()
 			}
+			t.cbMu.Unlock()
 		}
 		if err != nil {
 			t.mu.Lock()
@@ -225,26 +239,58 @@ func (t *Terminal) Size() (cols, rows int) {
 	return t.cols, t.rows
 }
 
+// Close hangs up the shell the way a terminal emulator does when its window
+// closes, then kills what is left of the shell's process group.
+//
+// readLoop only returns once every holder of the pty slave has closed it, and
+// a background job that ignores SIGHUP can keep it open indefinitely, so the
+// wait for readLoop is bounded and the goroutine may outlive Close.
 func (t *Terminal) Close() {
+	t.cbMu.Lock()
 	t.mu.Lock()
 	if t.closed {
 		t.mu.Unlock()
+		t.cbMu.Unlock()
 		return
 	}
 	t.closed = true
 	started := t.started
 	t.mu.Unlock()
+	t.cbMu.Unlock()
 
+	t.signalShell(sigHangup, started)
 	t.mu.Lock()
 	t.pt.Close()
 	t.mu.Unlock()
-	if t.cmd != nil && t.cmd.Process != nil {
-		t.cmd.Process.Kill()
+	if started {
+		select {
+		case <-t.waited:
+		case <-time.After(hangupGrace):
+		}
 	}
+	t.signalShell(sigKill, started)
 	if started {
 		<-t.waited
-		<-t.done
+		select {
+		case <-t.done:
+		case <-time.After(readLoopGrace):
+		}
 	}
+}
+
+func (t *Terminal) signalShell(sig shellSignal, started bool) {
+	if t.cmd == nil || t.cmd.Process == nil {
+		return
+	}
+	if started {
+		// Once reaped, the pid (and its group id) may belong to another process.
+		select {
+		case <-t.waited:
+			return
+		default:
+		}
+	}
+	signalProcessGroup(t.cmd.Process, sig)
 }
 
 func (t *Terminal) ScrollbackLen() int {
