@@ -14,3 +14,5 @@ const (
 func signalProcessGroup(p *os.Process, _ shellSignal) {
 	_ = p.Kill()
 }
+
+func restoreChildHangup() {}

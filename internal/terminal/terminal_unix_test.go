@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"os/signal"
 	"regexp"
 	"strconv"
 	"strings"
@@ -79,6 +80,33 @@ func closeWithin(t *testing.T, term *Terminal, limit time.Duration) time.Duratio
 }
 
 func TestCloseHangsUpBackgroundJobs(t *testing.T) {
+	assertCloseHangsUpJob(t)
+}
+
+// nohup and some CI runners start ttt with SIGHUP ignored, which children
+// inherit. The disposition must be in place before the Go runtime starts, so
+// the test reruns itself under a shell that ignores SIGHUP.
+func TestCloseHangsUpJobsWhenParentIgnoresHangup(t *testing.T) {
+	if os.Getenv("TTT_TEST_HUP_IGNORED") == "1" {
+		if !signal.Ignored(syscall.SIGHUP) {
+			t.Fatal("expected SIGHUP to be ignored at startup")
+		}
+		assertCloseHangsUpJob(t)
+		return
+	}
+	if _, err := exec.LookPath("bash"); err != nil {
+		t.Skip("bash not available")
+	}
+	cmd := exec.Command("sh", "-c", `trap "" HUP; exec "$0" -test.run='^TestCloseHangsUpJobsWhenParentIgnoresHangup$' -test.count=1 -test.v`, os.Args[0])
+	cmd.Env = append(os.Environ(), "TTT_TEST_HUP_IGNORED=1")
+	out, err := cmd.CombinedOutput()
+	if err != nil || !strings.Contains(string(out), "--- PASS") {
+		t.Fatalf("hangup test with SIGHUP ignored failed: %v\n%s", err, out)
+	}
+}
+
+func assertCloseHangsUpJob(t *testing.T) {
+	t.Helper()
 	term, pid := startShellJob(t, "bash", "sleep 300 & echo JOBPID=$!")
 
 	closeWithin(t, term, readLoopGrace)

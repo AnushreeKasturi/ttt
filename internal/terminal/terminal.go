@@ -98,6 +98,7 @@ func New(shell string, cols, rows, scrollbackMax int, env []string, dir string) 
 		return nil, err
 	}
 
+	restoreChildHangup()
 	if err := cmd.Start(); err != nil {
 		pt.Close()
 		return nil, err
